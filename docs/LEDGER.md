@@ -103,3 +103,12 @@ Known limitations:
 - Real payment gateway adapter still missing (mock gateway works outside production only).
 - Ticket emails need a verified sending domain in Resend; in development they print to the terminal.
 - Organizers cannot yet browse an orders list (they see attendees and revenue per event).
+
+## PayOnUs gateway: written from documentation.payonus.com, NOT yet tested against the sandbox
+Adapter src/lib/payments/payonus.ts using Dynamic Accounts (a temporary bank account per order, shown on the order page).
+Token cached in the database (PayOnUs allows one valid token and 3 token requests per minute), retry once on 401.
+Webhook: POST /api/webhooks/payments/payonus, header "hash" = sha256(accountNumber + onusReference + paymentStatus + key).
+That signature does not cover amount or our reference, so a webhook only triggers verification through the PayOnUs API.
+Amounts: kobo here, naira there. Verified amount is amountPaid. Phone is required by PayOnUs; a placeholder is sent.
+Not built: card payments via the PayOnUs Checkout SDK, and refunds (do them in the PayOnUs dashboard).
+Sandbox needs: webhook URL + verification key set in the dashboard, and your server IP whitelisted. Test with: npm run payonus:simulate.

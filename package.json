@@ -16,7 +16,8 @@
     "db:init": "prisma migrate dev --create-only --name init && node scripts/append-partial-index.mjs && prisma migrate dev",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "payonus:simulate": "node --env-file=.env scripts/payonus-simulate.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

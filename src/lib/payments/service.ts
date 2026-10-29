@@ -15,8 +15,8 @@ const OPEN = ["INITIATED", "PENDING"] as const;
 const newPaymentReference = () => "P9-" + randomBytes(12).toString("hex");
 const isUnique = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
-/** Creates a payment attempt and returns where to send the customer. */
-export async function startPayment(orderReference: string, baseUrl: string): Promise<string> {
+/** Creates a payment attempt. Returns a redirect URL, or null when the customer must follow bank-transfer instructions. */
+export async function startPayment(orderReference: string, baseUrl: string): Promise<{ authorizationUrl: string | null }> {
   const provider = getProvider();
   const order = await db.order.findUnique({ where: { reference: orderReference } });
   if (!order || order.status !== "PENDING" || order.totalMinor <= 0) throw new PaymentError("This order can no longer be paid.");
@@ -27,17 +27,21 @@ export async function startPayment(orderReference: string, baseUrl: string): Pro
     data: { orderId: order.id, provider: provider.name, providerReference: reference, amountMinor: order.totalMinor, currency: order.currency },
   });
   try {
-    const { authorizationUrl } = await provider.initialize({
+    const init = await provider.initialize({
       paymentReference: reference, orderReference: order.reference, amountMinor: order.totalMinor,
-      currency: order.currency, buyerEmail: order.buyerEmail, callbackUrl: `${baseUrl}/orders/${order.reference}`,
+      currency: order.currency, buyerName: order.buyerName, buyerEmail: order.buyerEmail, callbackUrl: `${baseUrl}/orders/${order.reference}`,
     });
-    await db.payment.update({ where: { id: payment.id }, data: { status: "PENDING" } });
+    const meta = { ...(init.meta ?? {}), ...(init.instructions ? { instructions: init.instructions } : {}) };
+    await db.payment.update({
+      where: { id: payment.id },
+      data: { status: "PENDING", ...(Object.keys(meta).length ? { meta: meta as Prisma.InputJsonValue } : {}) },
+    });
     // Hold the stock while the customer is at the gateway (bounded: only for orders under 2 hours old).
     await db.order.updateMany({
       where: { id: order.id, status: "PENDING", createdAt: { gt: new Date(Date.now() - 2 * 3600_000) } },
       data: { expiresAt: new Date(Date.now() + 30 * 60_000) },
     });
-    return authorizationUrl;
+    return { authorizationUrl: init.authorizationUrl ?? null };
   } catch (e) {
     console.error("payment initialization failed", e);
     await db.payment.update({ where: { id: payment.id }, data: { status: "FAILED" } });
@@ -55,7 +59,7 @@ export async function finalizePayment(paymentId: string): Promise<Outcome> {
   if (!payment) throw new PaymentError("Payment not found.");
   if (!(OPEN as readonly string[]).includes(payment.status)) return "already";
 
-  const v = await getProvider(payment.provider).verify(payment.providerReference);
+  const v = await getProvider(payment.provider).verify(payment.providerReference, payment.meta);
   if (v.status === "pending") return "pending";
 
   if (v.status === "failed") {

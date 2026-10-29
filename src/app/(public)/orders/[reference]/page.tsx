@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { formatInTz } from "@/lib/events";
 import { formatMinor } from "@/lib/money";
+import { instructionsOf } from "@/lib/payments/instructions";
 import Link from "next/link";
 import { after } from "next/server";
 import { maskEmail } from "@/lib/format";
@@ -25,7 +26,7 @@ const load = (reference: string) =>
     include: {
       event: true,
       items: { include: { ticketType: true } },
-      payments: { where: { status: { in: ["INITIATED", "PENDING"] } }, select: { id: true }, take: 1 },
+      payments: { where: { status: { in: ["INITIATED", "PENDING"] } }, select: { id: true, meta: true }, orderBy: { createdAt: "desc" }, take: 1 },
       tickets: { orderBy: [{ ticketTypeId: "asc" }, { sequence: "asc" }], select: { id: true, code: true, qrToken: true, ticketType: { select: { name: true } } } },
     },
   });
@@ -44,6 +45,7 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
   if (order.status === "PAID") after(() => processOutbox(3).catch((e) => console.error("outbox", e))); // retry any unsent ticket email
   const s = STATUS[order.status];
   const paymentInFlight = order.status === "PENDING" && order.payments.length > 0;
+  const transfer = paymentInFlight ? instructionsOf(order.payments[0].meta) : null;
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-6 py-12">
       {paymentInFlight && <AutoRefresh />}
@@ -81,9 +83,22 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
       )}
       {order.status === "PENDING" && order.totalMinor > 0 && (
         <div className="space-y-3">
-          {paymentInFlight && <p role="status" className="text-sm text-muted-foreground">Checking your payment...</p>}
+          {transfer && (
+            <section aria-labelledby="transfer" className="space-y-3 rounded-lg border p-4 text-sm">
+              <h2 id="transfer" className="font-semibold">Pay by bank transfer</h2>
+              <p className="text-muted-foreground">Transfer exactly {formatMinor(transfer.amountMinor, order.currency)} to this account from any bank app. This page updates by itself once the payment arrives.</p>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                <dt className="text-muted-foreground">Bank</dt><dd className="font-medium">{transfer.bankName}</dd>
+                <dt className="text-muted-foreground">Account number</dt><dd className="font-mono text-base font-semibold">{transfer.accountNumber}</dd>
+                <dt className="text-muted-foreground">Account name</dt><dd>{transfer.accountName}</dd>
+                <dt className="text-muted-foreground">Amount</dt><dd className="font-semibold">{formatMinor(transfer.amountMinor, order.currency)}</dd>
+              </dl>
+              <p className="text-xs text-muted-foreground">This account is for this order only. Send the exact amount, once.</p>
+            </section>
+          )}
+          {paymentInFlight && <p role="status" className="text-sm text-muted-foreground">Waiting for your payment...</p>}
           {order.expiresAt && <p className="text-sm text-muted-foreground">Held until {formatInTz(order.expiresAt, order.event.timezone)}.</p>}
-          <PayButton reference={order.reference} label={paymentInFlight ? "Pay again" : "Pay now"} />
+          <PayButton reference={order.reference} label={transfer ? "Get new account details" : paymentInFlight ? "Pay again" : "Pay now"} />
         </div>
       )}
     </main>

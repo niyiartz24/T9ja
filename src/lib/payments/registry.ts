@@ -1,10 +1,10 @@
 import { mockProvider } from "./mock";
+import { payonusProvider } from "./payonus";
 import type { PaymentProvider } from "./types";
 
 export class PaymentConfigError extends Error {}
 
-// Register the client's real gateway here once its adapter exists, e.g. { paystack: paystackProvider }.
-const providers: Record<string, PaymentProvider> = { mock: mockProvider };
+const providers: Record<string, PaymentProvider> = { mock: mockProvider, payonus: payonusProvider };
 
 export function getProvider(name?: string): PaymentProvider {
   const n = (name ?? process.env.PAYMENT_PROVIDER ?? "").trim().toLowerCase();
