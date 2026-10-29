@@ -40,14 +40,15 @@ export async function saveEvent(_: State, form: FormData): Promise<State> {
   }
   revalidatePath(base);
   revalidateTag("events");
-  if (!id) redirect(`${base}/${eventId}`);
+  if (!id) redirect(`${base}/${eventId}#ticket-types`);
   return { ok: true, message: "Saved." };
 }
 
 export async function changeStatus(_: State, form: FormData): Promise<State> {
   const { actor, base } = await who();
-  const id = z.string().min(1).parse(form.get("id"));
-  const intent = z.enum(["publish", "unpublish", "cancel"]).parse(form.get("intent"));
+  const input = z.object({ id: z.string().min(1), intent: z.enum(["publish", "unpublish", "cancel"]) }).safeParse(Object.fromEntries(form));
+  if (!input.success) return { ok: false, message: "That action could not be read. Please reload the page and try again." };
+  const { id, intent } = input.data;
   try {
     if (intent === "publish") await publishEvent(actor, id);
     if (intent === "unpublish") await unpublishEvent(actor, id);

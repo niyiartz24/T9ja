@@ -34,16 +34,26 @@ export function AddStaffForm({ eventId }: { eventId: string }) {
 
 export function StaffControls({ eventId, userId }: { eventId: string; userId: string }) {
   const [state, action, pending] = useActionState(staffAction, null);
-  return (
-    <form action={action} className="space-y-2">
+  const button = (intent: string, label: string, variant: "outline" | "ghost", confirmText?: string) => (
+    <form action={action}>
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="userId" value={userId} />
+      <input type="hidden" name="intent" value={intent} />
+      <Button
+        type="submit" size="sm" variant={variant} disabled={pending}
+        onClick={confirmText ? (e) => { if (!confirm(confirmText)) e.preventDefault(); } : undefined}
+      >
+        {label}
+      </Button>
+    </form>
+  );
+  return (
+    <div className="space-y-2">
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" name="intent" value="reset" disabled={pending}>Reset password</Button>
-        <Button size="sm" variant="ghost" name="intent" value="remove" disabled={pending}
-          onClick={(e) => { if (!confirm("Remove this scanner from the event?")) e.preventDefault(); }}>Remove</Button>
+        {button("reset", "Reset password", "outline")}
+        {button("remove", "Remove", "ghost", "Remove this scanner from the event?")}
       </div>
       <Result state={state} />
-    </form>
+    </div>
   );
 }

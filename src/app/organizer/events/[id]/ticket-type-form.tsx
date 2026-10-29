@@ -41,16 +41,24 @@ export function TicketTypeForm({ eventId, values }: { eventId: string; values: T
 
 export function TicketTypeControls({ eventId, id, active, locked }: { eventId: string; id: string; active: boolean; locked: boolean }) {
   const [state, action, pending] = useActionState(ticketTypeAction, null);
-  return (
-    <form action={action} className="flex items-center gap-2">
+  const button = (intent: string, label: string, variant: "outline" | "ghost", confirmText?: string) => (
+    <form action={action}>
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="id" value={id} />
-      <Button size="sm" variant="outline" name="intent" value={active ? "deactivate" : "activate"} disabled={pending}>{active ? "Deactivate" : "Activate"}</Button>
-      {!locked && (
-        <Button size="sm" variant="ghost" name="intent" value="delete" disabled={pending}
-          onClick={(e) => { if (!confirm("Delete this ticket type?")) e.preventDefault(); }}>Delete</Button>
-      )}
-      {state && !state.ok && <span role="alert" className="text-sm text-destructive">{state.message}</span>}
+      <input type="hidden" name="intent" value={intent} />
+      <Button
+        type="submit" size="sm" variant={variant} disabled={pending}
+        onClick={confirmText ? (e) => { if (!confirm(confirmText)) e.preventDefault(); } : undefined}
+      >
+        {label}
+      </Button>
     </form>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {button(active ? "deactivate" : "activate", active ? "Deactivate" : "Activate", "outline")}
+      {!locked && button("delete", "Delete", "ghost", "Delete this ticket type?")}
+      {state && !state.ok && <span role="alert" className="text-sm text-destructive">{state.message}</span>}
+    </div>
   );
 }
