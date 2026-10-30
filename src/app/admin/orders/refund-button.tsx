@@ -10,7 +10,7 @@ export function RefundButton({ paymentId }: { paymentId: string }) {
       <input type="hidden" name="paymentId" value={paymentId} />
       <Button
         size="sm" variant="outline" disabled={pending}
-        onClick={(e) => { if (!confirm("Refund this payment? This cannot be undone.")) e.preventDefault(); }}
+        onClick={(e) => { if (!confirm("Record this payment as refunded? For bank transfers, send the money back from your bank FIRST. This cannot be undone.")) e.preventDefault(); }}
       >
         {pending ? "Refunding..." : "Refund"}
       </Button>

@@ -22,14 +22,14 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
   const where: Prisma.OrderWhereInput = {
     ...(status ? { status } : {}),
     ...(attention ? { payments: { some: { OR: [{ status: "REVIEW" }, { refundRequired: true, status: { not: "REFUNDED" } }] } } } : {}),
-    ...(q ? { OR: [{ reference: q.toUpperCase() }, { buyerEmail: { contains: q.toLowerCase() } }, { buyerName: { contains: q, mode: "insensitive" } }] } : {}),
+    ...(q ? { OR: [{ reference: q.toUpperCase() }, { referralCode: q.toUpperCase() }, { buyerEmail: { contains: q.toLowerCase() } }, { buyerName: { contains: q, mode: "insensitive" } }] } : {}),
   };
   const [total, orders] = await Promise.all([
     db.order.count({ where }),
     db.order.findMany({
       where, orderBy: { createdAt: "desc" }, skip: (page - 1) * PAGE, take: PAGE,
       select: {
-        id: true, reference: true, buyerName: true, buyerEmail: true, totalMinor: true, currency: true, status: true, createdAt: true,
+        id: true, reference: true, referralCode: true, buyerName: true, buyerEmail: true, totalMinor: true, currency: true, status: true, createdAt: true,
         event: { select: { id: true, title: true } },
         payments: { orderBy: { createdAt: "desc" }, take: 3, select: { id: true, status: true, refundRequired: true } },
       },
@@ -41,7 +41,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
       <h1 className="text-2xl font-semibold">Orders and payments</h1>
       <form className="flex flex-wrap items-center gap-3" role="search">
-        <Input name="q" defaultValue={q} placeholder="Reference, email or name" aria-label="Search orders" className="max-w-xs" />
+        <Input name="q" defaultValue={q} placeholder="Reference, referral code, email or name" aria-label="Search orders" className="max-w-xs" />
         <select name="status" defaultValue={status ?? ""} aria-label="Status" className="h-9 rounded-md border bg-background px-3 text-sm">
           <option value="">All statuses</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -61,7 +61,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
               const refundable = o.payments.find((p) => (p.status === "SUCCEEDED" || p.status === "REVIEW") && (p.refundRequired || p.status === "REVIEW" || o.status === "PAID"));
               return (
                 <TableRow key={o.id}>
-                  <TableCell className="font-mono text-xs">{o.reference}</TableCell>
+                  <TableCell className="font-mono text-xs">{o.reference}{o.referralCode && <div className="text-muted-foreground">{o.referralCode}</div>}</TableCell>
                   <TableCell><Link className="hover:underline" href={`/admin/events/${o.event.id}`}>{o.event.title}</Link></TableCell>
                   <TableCell><div>{o.buyerName}</div><div className="text-xs text-muted-foreground">{o.buyerEmail}</div></TableCell>
                   <TableCell><Badge variant={o.status === "PAID" ? "default" : "secondary"}>{o.status}</Badge></TableCell>

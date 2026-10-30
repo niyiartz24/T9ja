@@ -16,8 +16,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: `${event.title} | Ticket9ja`, description: event.description.slice(0, 160), robots: { index: false, follow: false } };
 }
 
-export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function EventPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ ref?: string }> }) {
   const event = await load((await params).slug);
+  const ref = (await searchParams).ref;
   if (!event || event.status === "DRAFT") notFound();
   const now = new Date();
   const cancelled = event.status === "CANCELLED";
@@ -58,7 +59,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         ) : types.length === 0 ? (
           <p className="text-sm text-muted-foreground">Tickets are not available yet.</p>
         ) : (
-          <TicketPicker eventId={event.id} types={types} />
+          <TicketPicker eventId={event.id} types={types} referral={ref} />
         )}
       </aside>
     </main>

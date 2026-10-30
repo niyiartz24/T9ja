@@ -104,11 +104,17 @@ Known limitations:
 - Ticket emails need a verified sending domain in Resend; in development they print to the terminal.
 - Organizers cannot yet browse an orders list (they see attendees and revenue per event).
 
-## PayOnUs gateway: written from documentation.payonus.com, NOT yet tested against the sandbox
-Adapter src/lib/payments/payonus.ts using Dynamic Accounts (a temporary bank account per order, shown on the order page).
-Token cached in the database (PayOnUs allows one valid token and 3 token requests per minute), retry once on 401.
-Webhook: POST /api/webhooks/payments/payonus, header "hash" = sha256(accountNumber + onusReference + paymentStatus + key).
-That signature does not cover amount or our reference, so a webhook only triggers verification through the PayOnUs API.
-Amounts: kobo here, naira there. Verified amount is amountPaid. Phone is required by PayOnUs; a placeholder is sent.
-Not built: card payments via the PayOnUs Checkout SDK, and refunds (do them in the PayOnUs dashboard).
-Sandbox needs: webhook URL + verification key set in the dashboard, and your server IP whitelisted. Test with: npm run payonus:simulate.
+## Manual bank transfer (replaces PayOnUs) and referral codes: written, NOT yet verified
+Payments: PAYMENT_PROVIDER="manual". The customer sees the Ticket9ja account (VFD MFB 1048926078, account name Ticket9ja, editable via
+MANUAL_BANK_* in .env), the exact amount and their order reference to use as the transfer description, then taps "I have made the transfer".
+That holds the stock for 24 hours and emails PAYMENT_ALERT_EMAIL. The Super Admin checks the bank statement in /admin/payments, types the amount
+received and confirms. The shared finalize step checks that amount against the order: exact match issues tickets and queues the email, a mismatch
+goes to review. "Not received" fails the attempt so the customer can start again. A customer's claim can never confirm anything.
+Refunds are recorded in /admin/orders AFTER the admin sends the money back from the bank.
+Referral codes: every organizer (and the Super Admin) gets one permanent code, REF-XXXXXX, created on first use. The share link on each event page is
+/events/<slug>?ref=<owner's code>. The order stores the code from the link when it belongs to a real active organizer, otherwise the event owner's code.
+It is printed on the receipt email, ticket page, order page, attendee list and CSV, and the admin can search orders by it.
+Database: one new migration (see prisma/migrations in the update zip): Payment.meta, Payment.claimedAt, User.referralCode, Order.referralCode, plus the
+earlier payment-review columns, all written with IF NOT EXISTS so it is safe to run even if some were already applied.
+Known limitations: a shared account cannot tell transfers apart except by amount, sender name and the order reference in the description, so the
+admin must check each one. No card payments, no automatic refunds, no proof-of-payment upload.

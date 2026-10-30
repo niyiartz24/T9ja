@@ -20,12 +20,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
   const tickets = await db.ticket.findMany({
     where: { eventId: id }, orderBy: { issuedAt: "asc" }, take: 20000,
-    select: { code: true, status: true, holderName: true, holderEmail: true, issuedAt: true, usedAt: true, ticketType: { select: { name: true } }, order: { select: { reference: true } } },
+    select: { code: true, status: true, holderName: true, holderEmail: true, issuedAt: true, usedAt: true, ticketType: { select: { name: true } }, order: { select: { reference: true, referralCode: true } } },
   });
   await db.auditLog.create({ data: { actorId: user.id, action: "attendees.export", entityType: "Event", entityId: id, metadata: { rows: tickets.length } } });
   const lines = [
-    csvRow(["Ticket ID", "Name", "Email", "Ticket type", "Status", "Order", "Issued (UTC)", "Used (UTC)"]),
-    ...tickets.map((t) => csvRow([t.code, t.holderName, t.holderEmail, t.ticketType.name, t.status, t.order.reference, t.issuedAt.toISOString(), t.usedAt?.toISOString() ?? ""])),
+    csvRow(["Ticket ID", "Name", "Email", "Ticket type", "Status", "Order", "Referral code", "Issued (UTC)", "Used (UTC)"]),
+    ...tickets.map((t) => csvRow([t.code, t.holderName, t.holderEmail, t.ticketType.name, t.status, t.order.reference, t.order.referralCode ?? "", t.issuedAt.toISOString(), t.usedAt?.toISOString() ?? ""])),
   ];
   return new Response(lines.join("\r\n"), {
     headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="attendees-${event.slug}.csv"`, "Cache-Control": "no-store" },

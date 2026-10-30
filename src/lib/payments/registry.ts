@@ -1,10 +1,10 @@
 import { mockProvider } from "./mock";
-import { payonusProvider } from "./payonus";
+import { manualProvider } from "./manual";
 import type { PaymentProvider } from "./types";
 
 export class PaymentConfigError extends Error {}
 
-const providers: Record<string, PaymentProvider> = { mock: mockProvider, payonus: payonusProvider };
+const providers: Record<string, PaymentProvider> = { manual: manualProvider, mock: mockProvider };
 
 export function getProvider(name?: string): PaymentProvider {
   const n = (name ?? process.env.PAYMENT_PROVIDER ?? "").trim().toLowerCase();

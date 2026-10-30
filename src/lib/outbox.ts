@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { formatMinor } from "@/lib/money";
 import { ticketsEmail } from "@/lib/ticket-email";
 
 const MAX_ATTEMPTS = 6;
@@ -21,6 +22,7 @@ export async function enqueueTicketEmail(orderId: string, tx: Prisma.Transaction
 }
 
 async function deliver(job: { to: string; template: string; payload: unknown }) {
+  if (job.template === "payment-claim") return deliverClaimAlert(job);
   if (job.template !== "tickets") throw new Error(`Unknown email template ${job.template}`);
   const { orderId } = job.payload as { orderId: string };
   const order = await db.order.findUnique({
@@ -37,6 +39,7 @@ async function deliver(job: { to: string; template: string; payload: unknown }) 
   const mail = ticketsEmail({
     buyerName: order.buyerName, orderReference: order.reference, appUrl, event: order.event,
     tickets: order.tickets.map((t) => ({ code: t.code, qrToken: t.qrToken, typeName: t.ticketType.name })),
+    receipt: { totalMinor: order.totalMinor, currency: order.currency, referralCode: order.referralCode },
   });
   await sendEmail({ to: job.to, ...mail });
 }
@@ -72,4 +75,23 @@ export async function processOutbox(limit = 10): Promise<number> {
     }
   }
   return sent;
+}
+
+/** Generic, idempotent enqueue (dedupeKey) for any template. */
+export async function enqueueEmail(tx: Prisma.TransactionClient, e: { to: string; template: string; payload: Prisma.InputJsonValue; dedupeKey: string }) {
+  await tx.emailOutbox.createMany({ data: [{ to: e.to, template: e.template, payload: e.payload, dedupeKey: e.dedupeKey }], skipDuplicates: true });
+}
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+async function deliverClaimAlert(job: { to: string; payload: unknown }) {
+  const p = job.payload as { orderReference: string; senderName: string; amountMinor: number; currency: string; eventTitle: string };
+  const link = `${(process.env.APP_URL ?? "").replace(/\/+$/, "")}/admin/payments`;
+  const amount = formatMinor(p.amountMinor, p.currency);
+  await sendEmail({
+    to: job.to,
+    subject: `Bank transfer to verify: ${p.orderReference}`,
+    text: `A customer says they have paid ${amount} for ${p.eventTitle}.\nOrder: ${p.orderReference}\nSender name: ${p.senderName}\nCheck your bank statement, then confirm it here: ${link}`,
+    html: `<p>A customer says they have paid <strong>${esc(amount)}</strong> for ${esc(p.eventTitle)}.</p><p>Order: <strong>${esc(p.orderReference)}</strong><br>Sender name: ${esc(p.senderName)}</p><p>Check your bank statement, then <a href="${link}">confirm it here</a>.</p>`,
+  });
 }

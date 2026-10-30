@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 
 /** All dashboard numbers come straight from the database, in one parallel round trip. */
 export async function platformStats() {
-  const [organizers, events, payments, tickets, orders, review, refundDue, recentOrders, topRaw] = await Promise.all([
+  const [organizers, events, payments, tickets, orders, review, refundDue, recentOrders, topRaw, toVerify] = await Promise.all([
     db.user.count({ where: { role: "ORGANIZER" } }),
     db.event.groupBy({ by: ["status"], _count: true }),
     db.payment.groupBy({ by: ["status"], _count: true, _sum: { amountMinor: true } }),
@@ -15,6 +15,7 @@ export async function platformStats() {
       select: { reference: true, buyerName: true, totalMinor: true, currency: true, status: true, createdAt: true, event: { select: { title: true } } },
     }),
     db.order.groupBy({ by: ["eventId"], where: { status: "PAID", totalMinor: { gt: 0 } }, _sum: { totalMinor: true }, _count: true, orderBy: { _sum: { totalMinor: "desc" } }, take: 5 }),
+    db.payment.count({ where: { provider: "manual", status: "PENDING", claimedAt: { not: null }, order: { status: "PENDING" } } }),
   ]);
   const titles = topRaw.length
     ? await db.event.findMany({ where: { id: { in: topRaw.map((t) => t.eventId) } }, select: { id: true, title: true, organizer: { select: { name: true, email: true } } } })
@@ -35,7 +36,7 @@ export async function platformStats() {
     },
     tickets: { issued: tickets.reduce((a, t) => a + t._count, 0), used: count(tickets, "USED"), valid: count(tickets, "VALID") },
     orders: { paid: count(orders, "PAID"), pending: count(orders, "PENDING"), total: orders.reduce((a, o) => a + o._count, 0) },
-    attention: { review, refundDue },
+    attention: { review, refundDue, toVerify },
     recentOrders,
     topEvents,
   };

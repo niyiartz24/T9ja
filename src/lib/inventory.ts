@@ -44,7 +44,7 @@ async function commitSale(tx: Tx, ticketTypeId: string, q: number) {
 
 /** Server-side pricing and validation. Nothing here trusts client prices or availability. */
 export async function createReservedOrder(
-  input: { eventId: string; buyerName: string; buyerEmail: string; lines: Line[] },
+  input: { eventId: string; buyerName: string; buyerEmail: string; lines: Line[]; referralCode?: string | null },
   now = new Date(),
 ) {
   const merged = new Map<string, number>();
@@ -87,7 +87,7 @@ export async function createReservedOrder(
     const order = await tx.order.create({
       data: {
         reference: newOrderReference(), eventId: event.id,
-        buyerName: input.buyerName.trim(), buyerEmail: input.buyerEmail.trim().toLowerCase(),
+        buyerName: input.buyerName.trim(), buyerEmail: input.buyerEmail.trim().toLowerCase(), referralCode: input.referralCode ?? null,
         subtotalMinor: subtotal, totalMinor: subtotal, currency: types[0].currency,
         expiresAt: new Date(now.getTime() + RESERVATION_MS),
         items: { create: items },

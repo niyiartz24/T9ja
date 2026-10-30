@@ -19,7 +19,7 @@ export default async function OrganizersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Events</TableHead>
+              <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Referral code</TableHead><TableHead>Events</TableHead>
               <TableHead>Status</TableHead><TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -28,6 +28,7 @@ export default async function OrganizersPage() {
               <TableRow key={o.id}>
                 <TableCell>{o.name ?? "-"}</TableCell>
                 <TableCell>{o.email}</TableCell>
+                <TableCell className="font-mono text-xs">{o.referralCode ?? "-"}</TableCell>
                 <TableCell>{o._count.events}</TableCell>
                 <TableCell><Badge variant={o.status === "ACTIVE" ? "default" : "secondary"}>{o.status}</Badge></TableCell>
                 <TableCell className="text-right">

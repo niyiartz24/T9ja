@@ -19,6 +19,7 @@ export type PaymentInstructions = {
   accountNumber: string;
   accountName: string;
   amountMinor: number;
+  narration?: string; // what the customer should put as the transfer description
 };
 
 export type InitResult = {

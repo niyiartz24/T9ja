@@ -1,4 +1,5 @@
 import { formatInTz } from "@/lib/events";
+import { formatMinor } from "@/lib/money";
 
 export type TicketEmailData = {
   buyerName: string;
@@ -6,6 +7,7 @@ export type TicketEmailData = {
   appUrl: string;
   event: { title: string; startsAt: Date; endsAt: Date; timezone: string; venueName: string | null; venueAddress: string | null; isOnline: boolean; onlineUrl: string | null };
   tickets: { code: string; qrToken: string; typeName: string }[];
+  receipt?: { totalMinor: number; currency: string; referralCode: string | null };
 };
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -29,10 +31,19 @@ export function ticketsEmail(d: TicketEmailData): { subject: string; html: strin
       <p style="margin:12px 0 0;font-size:13px"><a href="${base}/t/${t.qrToken}">Open this ticket</a></p>
     </div>`).join("");
 
+  const r = d.receipt;
+  const total = r ? formatMinor(r.totalMinor, r.currency) : null;
+  const receiptHtml = r ? `
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px">
+      <tr><td style="padding:4px 0;color:#555">Order</td><td style="text-align:right">${esc(d.orderReference)}</td></tr>
+      <tr><td style="padding:4px 0;color:#555">Total paid</td><td style="text-align:right">${esc(total ?? "")}</td></tr>
+      ${r.referralCode ? `<tr><td style="padding:4px 0;color:#555">Referral code</td><td style="text-align:right;font-family:monospace">${esc(r.referralCode)}</td></tr>` : ""}
+    </table>` : "";
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111">
     <h1 style="font-size:20px">You're going to ${esc(d.event.title)}</h1>
     <p>Hi ${esc(d.buyerName)}, your order <strong>${esc(d.orderReference)}</strong> is confirmed.</p>
     <p style="margin:0">${esc(when)}<br>${esc(where)}</p>
+    ${receiptHtml}
     ${cards}
     <p style="font-size:13px;color:#555">Show the QR code at the entrance. Each ticket admits one person and works once. If the image does not load, open the ticket link or give the ticket ID to the door staff.</p>
   </div>`;
@@ -40,6 +51,7 @@ export function ticketsEmail(d: TicketEmailData): { subject: string; html: strin
   const text = [
     `Hi ${d.buyerName}, your order ${d.orderReference} for ${d.event.title} is confirmed.`,
     `${when}`, where, "",
+    ...(r ? [`Total paid: ${total}`, ...(r.referralCode ? [`Referral code: ${r.referralCode}`] : []), ""] : []),
     ...d.tickets.map((t) => `${t.typeName}  ${t.code}\n${base}/t/${t.qrToken}`),
     "", "Show the QR code at the entrance. Each ticket admits one person and works once.",
   ].join("\n");

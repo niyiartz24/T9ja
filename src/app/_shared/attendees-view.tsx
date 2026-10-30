@@ -19,7 +19,7 @@ export async function AttendeesView({ actor, eventId, back }: { actor: Actor; ev
   const [tickets, paid] = await Promise.all([
     db.ticket.findMany({
       where: { eventId }, orderBy: { issuedAt: "desc" }, take: LIMIT,
-      select: { id: true, code: true, status: true, holderName: true, holderEmail: true, issuedAt: true, usedAt: true, ticketType: { select: { name: true } }, order: { select: { reference: true } } },
+      select: { id: true, code: true, status: true, holderName: true, holderEmail: true, issuedAt: true, usedAt: true, ticketType: { select: { name: true } }, order: { select: { reference: true, referralCode: true } } },
     }),
     db.order.aggregate({ where: { eventId, status: "PAID" }, _sum: { totalMinor: true }, _count: true }),
   ]);
@@ -39,7 +39,7 @@ export async function AttendeesView({ actor, eventId, back }: { actor: Actor; ev
         <p className="text-sm text-muted-foreground">No tickets have been issued yet.</p>
       ) : (
         <Table>
-          <TableHeader><TableRow><TableHead>Ticket ID</TableHead><TableHead>Holder</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead>Order</TableHead><TableHead>Issued</TableHead><TableHead>Used at</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Ticket ID</TableHead><TableHead>Holder</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead>Order</TableHead><TableHead>Referral</TableHead><TableHead>Issued</TableHead><TableHead>Used at</TableHead></TableRow></TableHeader>
           <TableBody>
             {tickets.map((t) => (
               <TableRow key={t.id}>
@@ -48,6 +48,7 @@ export async function AttendeesView({ actor, eventId, back }: { actor: Actor; ev
                 <TableCell>{t.ticketType.name}</TableCell>
                 <TableCell><Badge variant={t.status === "VALID" ? "default" : "secondary"}>{t.status}</Badge></TableCell>
                 <TableCell className="font-mono text-xs">{t.order.reference}</TableCell>
+                <TableCell className="font-mono text-xs">{t.order.referralCode ?? "-"}</TableCell>
                 <TableCell>{formatInTz(t.issuedAt, event.timezone)}</TableCell>
                 <TableCell>{t.usedAt ? formatInTz(t.usedAt, event.timezone) : "-"}</TableCell>
               </TableRow>

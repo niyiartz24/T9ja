@@ -73,6 +73,7 @@ model User {
   role          Role
   status        UserStatus @default(ACTIVE)
   emailVerified DateTime?
+  referralCode  String?    @unique
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -204,6 +205,7 @@ model Order {
   eventId       String
   buyerName     String
   buyerEmail    String
+  referralCode  String?
   status        OrderStatus @default(PENDING)
   subtotalMinor Int
   totalMinor    Int
@@ -219,6 +221,7 @@ model Order {
   tickets  Ticket[]
   @@index([eventId, status])
   @@index([buyerEmail])
+  @@index([referralCode])
   @@index([status, expiresAt])
 }
 
@@ -271,6 +274,7 @@ model Payment {
   verifiedAt        DateTime?
   refundRequired    Boolean       @default(false)
   meta              Json?
+  claimedAt         DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 

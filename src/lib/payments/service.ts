@@ -22,6 +22,11 @@ export async function startPayment(orderReference: string, baseUrl: string): Pro
   if (!order || order.status !== "PENDING" || order.totalMinor <= 0) throw new PaymentError("This order can no longer be paid.");
   if (order.expiresAt && order.expiresAt <= new Date()) throw new PaymentError("This reservation has expired. Please start a new order.");
 
+  if (provider.name === "manual") {
+    const open = await db.payment.findFirst({ where: { orderId: order.id, provider: "manual", status: { in: [...OPEN] } }, select: { id: true } });
+    if (open) return { authorizationUrl: null };
+  }
+
   const reference = newPaymentReference();
   const payment = await db.payment.create({
     data: { orderId: order.id, provider: provider.name, providerReference: reference, amountMinor: order.totalMinor, currency: order.currency },

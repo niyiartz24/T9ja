@@ -10,6 +10,7 @@ import { processOutbox } from "@/lib/outbox";
 import { allow } from "@/lib/rate-limit";
 import { verifyOrderPayments } from "@/lib/payments/service";
 import { AutoRefresh, PayButton } from "./pay-button";
+import { TransferClaim } from "./transfer-claim";
 
 const STATUS: Record<string, { title: string; body: string }> = {
   PAID: { title: "Order confirmed", body: "Your tickets have been issued for this order." },
@@ -26,7 +27,7 @@ const load = (reference: string) =>
     include: {
       event: true,
       items: { include: { ticketType: true } },
-      payments: { where: { status: { in: ["INITIATED", "PENDING"] } }, select: { id: true, meta: true }, orderBy: { createdAt: "desc" }, take: 1 },
+      payments: { where: { status: { in: ["INITIATED", "PENDING"] } }, select: { id: true, meta: true, claimedAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
       tickets: { orderBy: [{ ticketTypeId: "asc" }, { sequence: "asc" }], select: { id: true, code: true, qrToken: true, ticketType: { select: { name: true } } } },
     },
   });
@@ -46,9 +47,10 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
   const s = STATUS[order.status];
   const paymentInFlight = order.status === "PENDING" && order.payments.length > 0;
   const transfer = paymentInFlight ? instructionsOf(order.payments[0].meta) : null;
+  const claimed = !!order.payments[0]?.claimedAt;
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-6 py-12">
-      {paymentInFlight && <AutoRefresh />}
+      {paymentInFlight && claimed && <AutoRefresh />}
       <header>
         <p className="text-sm text-muted-foreground">Order {order.reference}</p>
         <h1 className="text-2xl font-semibold">{s.title}</h1>
@@ -58,6 +60,7 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
         <p className="font-medium">{order.event.title}</p>
         <p className="text-muted-foreground">{formatInTz(order.event.startsAt, order.event.timezone)}</p>
         <p className="text-muted-foreground">Tickets for {maskEmail(order.buyerEmail)}</p>
+        {order.referralCode && <p className="text-muted-foreground">Referral code <span className="font-mono">{order.referralCode}</span></p>}
       </section>
       <ul className="divide-y rounded-lg border text-sm">
         {order.items.map((it) => (
@@ -93,12 +96,17 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
                 <dt className="text-muted-foreground">Account name</dt><dd>{transfer.accountName}</dd>
                 <dt className="text-muted-foreground">Amount</dt><dd className="font-semibold">{formatMinor(transfer.amountMinor, order.currency)}</dd>
               </dl>
-              <p className="text-xs text-muted-foreground">This account is for this order only. Send the exact amount, once.</p>
+              {transfer.narration && <p>Put this reference as the transfer description: <span className="font-mono font-semibold">{transfer.narration}</span></p>}
+              <p className="text-xs text-muted-foreground">Send the exact amount, once. We confirm payments by hand, so it can take a little while.</p>
+              {claimed ? (
+                <p role="status" className="rounded-md border p-3">We have your payment notice and are checking it. Your tickets will be emailed as soon as it is confirmed, and this page will update.</p>
+              ) : (
+                <TransferClaim reference={order.reference} defaultName={order.buyerName} />
+              )}
             </section>
           )}
-          {paymentInFlight && <p role="status" className="text-sm text-muted-foreground">Waiting for your payment...</p>}
           {order.expiresAt && <p className="text-sm text-muted-foreground">Held until {formatInTz(order.expiresAt, order.event.timezone)}.</p>}
-          <PayButton reference={order.reference} label={transfer ? "Get new account details" : paymentInFlight ? "Pay again" : "Pay now"} />
+          {!transfer && <PayButton reference={order.reference} label={paymentInFlight ? "Pay again" : "Pay by bank transfer"} />}
         </div>
       )}
     </main>

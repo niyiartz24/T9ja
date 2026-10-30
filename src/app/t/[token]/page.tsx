@@ -20,7 +20,7 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
   const t = await db.ticket.findUnique({
     where: { qrToken: token },
     select: {
-      code: true, status: true, holderName: true,
+      code: true, status: true, holderName: true, order: { select: { referralCode: true } },
       ticketType: { select: { name: true } },
       event: { select: { title: true, startsAt: true, timezone: true, venueName: true, venueAddress: true, isOnline: true, onlineUrl: true } },
     },
@@ -39,6 +39,7 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
         {t.status === "VALID" && <img src={`/api/tickets/${token}/qr`} alt={`QR code for ticket ${t.code}`} width={260} height={260} className="mx-auto" />}
         <p className="font-mono text-lg">{t.code}</p>
         <p className="text-sm">{t.ticketType.name} for {t.holderName}</p>
+        {t.order.referralCode && <p className="text-xs text-muted-foreground">Referral code <span className="font-mono">{t.order.referralCode}</span></p>}
       </div>
       <p className="text-sm text-muted-foreground">{NOTE[t.status]}</p>
     </main>

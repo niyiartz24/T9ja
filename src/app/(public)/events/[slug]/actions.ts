@@ -27,7 +27,7 @@ export async function startCheckout(_: unknown, form: FormData) {
 
   let reference: string;
   try {
-    ({ reference } = await checkout({ eventId: parsed.data.eventId, buyerName: parsed.data.name, buyerEmail: parsed.data.email, lines }));
+    ({ reference } = await checkout({ eventId: parsed.data.eventId, buyerName: parsed.data.name, buyerEmail: parsed.data.email, lines, referral: typeof form.get("ref") === "string" ? (form.get("ref") as string) : undefined }));
   } catch (e) {
     if (e instanceof InventoryError) return { error: e.message };
     console.error("checkout failed", e);

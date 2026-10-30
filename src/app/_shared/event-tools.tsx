@@ -2,22 +2,23 @@ import Link from "next/link";
 import { Download, ScanLine, Users } from "lucide-react";
 import type { Actor } from "@/lib/event-service";
 import { listScannerStaff } from "@/lib/staff-service";
+import { ensureReferralCode } from "@/lib/referral";
 import { Button } from "@/components/ui/button";
 import { CopyLink } from "./copy-link";
 import { AddStaffForm, StaffControls } from "./staff-forms";
 
 /** Share link, scanner access and door staff: identical for organizers (own events) and Super Admins (all events). */
-export async function EventTools({ actor, event, base }: { actor: Actor; event: { id: string; slug: string; status: string }; base: string }) {
+export async function EventTools({ actor, event, base }: { actor: Actor; event: { id: string; slug: string; status: string; organizerId: string }; base: string }) {
   const appUrl = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
-  const staff = await listScannerStaff(actor, event.id);
-  const link = `${appUrl}/events/${event.slug}`;
+  const [staff, code] = await Promise.all([listScannerStaff(actor, event.id), ensureReferralCode(event.organizerId)]);
+  const link = `${appUrl}/events/${event.slug}?ref=${code}`;
   return (
     <div className="space-y-8">
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Share link</h2>
         {event.status === "PUBLISHED" ? (
           <>
-            <p className="text-sm text-muted-foreground">Anyone with this link can buy tickets for this event only. It is not listed anywhere on the site.</p>
+            <p className="text-sm text-muted-foreground">Anyone with this link can buy tickets for this event only. It is not listed anywhere on the site. The link carries the organizer's referral code ({code}), which appears on every receipt.</p>
             <CopyLink url={link} />
           </>
         ) : (

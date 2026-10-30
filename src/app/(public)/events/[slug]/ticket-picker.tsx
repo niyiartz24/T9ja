@@ -12,7 +12,7 @@ export type PickerType = {
   min: number; max: number; unavailable: string | null; lowStock: number | null;
 };
 
-export function TicketPicker({ eventId, types }: { eventId: string; types: PickerType[] }) {
+export function TicketPicker({ eventId, types, referral }: { eventId: string; types: PickerType[]; referral?: string }) {
   const [state, action, pending] = useActionState(startCheckout, null);
   const [qty, setQty] = useState<Record<string, number>>({});
   const count = Object.values(qty).reduce((a, b) => a + b, 0);
@@ -28,6 +28,7 @@ export function TicketPicker({ eventId, types }: { eventId: string; types: Picke
   return (
     <form action={action} className="space-y-6">
       <input type="hidden" name="eventId" value={eventId} />
+      {referral && <input type="hidden" name="ref" value={referral} />}
       <ul className="divide-y rounded-lg border">
         {types.map((t) => (
           <li key={t.id} className="flex items-center gap-4 p-4">
