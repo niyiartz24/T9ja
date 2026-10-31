@@ -18,7 +18,7 @@ export async function EventTools({ actor, event, base }: { actor: Actor; event: 
         <h2 className="text-lg font-semibold">Share link</h2>
         {event.status === "PUBLISHED" ? (
           <>
-            <p className="text-sm text-muted-foreground">Anyone with this link can buy tickets for this event only. It is not listed anywhere on the site. The link carries the organizer's referral code ({code}), which appears on every receipt.</p>
+            <p className="text-sm text-muted-foreground">Anyone with this link can buy tickets for this event only. It is not listed anywhere on the site. The link carries the organizer&apos;s referral code ({code}), which appears on every receipt.</p>
             <CopyLink url={link} />
           </>
         ) : (

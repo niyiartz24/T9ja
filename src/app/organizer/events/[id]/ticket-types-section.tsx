@@ -9,9 +9,9 @@ export function TicketTypesSection({ eventId, timezone, types, editable }: { eve
   const z = (d: Date | null) => (d ? utcToZonedInput(d, timezone) : "");
   const sorted = [...types].sort((a, b) => a.priceMinor - b.priceMinor || a.name.localeCompare(b.name));
   return (
-    <section className="space-y-4">
-      <h2 className="text-lg font-semibold">Ticket types</h2>
-      {sorted.length === 0 && <p className="text-sm text-muted-foreground">No ticket types yet. Add one to be able to publish.</p>}
+    <section id="ticket-types" className="scroll-mt-6 space-y-4">
+      <h2 className="text-lg font-semibold">Ticket types and prices</h2>
+      {sorted.length === 0 && <p className="text-sm text-muted-foreground">No ticket types yet. Use &quot;Add ticket type&quot; below to set a name, price and quantity (for example Regular, VIP, Early Bird or Free). The event cannot be published until it has at least one.</p>}
       <ul className="space-y-3">
         {sorted.map((t) => (
           <li key={t.id} className="rounded-md border p-4">
