@@ -11,9 +11,13 @@ const NOT_FOUND = "Event not found.";
 
 /**
  * The single authorization rule for events: Super Admins see every event,
- * organizers only their own. A foreign id is indistinguishable from a missing one.
+ * organizers see the events they own or were added to. A foreign id is indistinguishable from a missing one.
  */
-export const scope = (a: Actor): Prisma.EventWhereInput => (a.role === "SUPER_ADMIN" ? {} : { organizerId: a.id });
+export const scope = (a: Actor): Prisma.EventWhereInput =>
+  a.role === "SUPER_ADMIN" ? {} : { OR: [{ organizerId: a.id }, { collaborators: { some: { userId: a.id } } }] };
+
+/** Destructive actions stay with the event owner and the Super Admin. */
+export const ownerScope = (a: Actor): Prisma.EventWhereInput => (a.role === "SUPER_ADMIN" ? {} : { organizerId: a.id });
 
 function assertManager(a: Actor) {
   if (a.role !== "SUPER_ADMIN" && a.role !== "ORGANIZER") throw new EventError("You do not have permission to manage events.");
@@ -127,12 +131,14 @@ export async function cancelEvent(actor: Actor, id: string) {
   assertManager(actor);
   return db.$transaction(async (tx) => {
     const r = await tx.event.updateMany({
-      where: { id, ...scope(actor), status: { in: ["DRAFT", "PUBLISHED"] } },
+      where: { id, ...ownerScope(actor), status: { in: ["DRAFT", "PUBLISHED"] } },
       data: { status: "CANCELLED", cancelledAt: new Date() },
     });
     if (r.count !== 1) {
-      const exists = await tx.event.findFirst({ where: { id, ...scope(actor) } });
-      throw new EventError(exists ? "This event can no longer be cancelled." : NOT_FOUND);
+      const visible = await tx.event.findFirst({ where: { id, ...scope(actor) }, select: { id: true } });
+      if (!visible) throw new EventError(NOT_FOUND);
+      const owned = await tx.event.findFirst({ where: { id, ...ownerScope(actor) }, select: { id: true } });
+      throw new EventError(owned ? "This event can no longer be cancelled." : "Only the event owner or the Super Admin can cancel this event.");
     }
     await tx.auditLog.create({ data: { actorId: actor.id, action: "event.cancel", entityType: "Event", entityId: id, metadata: { role: actor.role } } });
   });

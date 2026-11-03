@@ -40,6 +40,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
       <h1 className="text-2xl font-semibold">Orders and payments</h1>
+      <p className="text-sm"><Link href="/admin/payments" className="underline">Bank transfers waiting to be verified</Link></p>
       <form className="flex flex-wrap items-center gap-3" role="search">
         <Input name="q" defaultValue={q} placeholder="Reference, referral code, email or name" aria-label="Search orders" className="max-w-xs" />
         <select name="status" defaultValue={status ?? ""} aria-label="Status" className="h-9 rounded-md border bg-background px-3 text-sm">

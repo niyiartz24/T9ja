@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
+import { scope } from "@/lib/event-service";
 import { Button } from "@/components/ui/button";
 
 export default async function OrganizerHome() {
   const user = await requireRole("ORGANIZER");
-  const groups = await db.event.groupBy({ by: ["status"], where: { organizerId: user.id }, _count: true });
+  const groups = await db.event.groupBy({ by: ["status"], where: scope({ id: user.id, role: user.role }), _count: true });
   const count = (s: string) => groups.find((g) => g.status === s)?._count ?? 0;
   const stats = [["Drafts", count("DRAFT")], ["Published", count("PUBLISHED")], ["Cancelled", count("CANCELLED")], ["Completed", count("COMPLETED")]] as const;
   return (

@@ -25,7 +25,7 @@ export default async function EventsPage() {
           <TableBody>
             {events.map((e) => (
               <TableRow key={e.id}>
-                <TableCell><Link className="font-medium hover:underline" href={`/organizer/events/${e.id}`}>{e.title}</Link></TableCell>
+                <TableCell><Link className="font-medium hover:underline" href={`/organizer/events/${e.id}`}>{e.title}</Link>{e.organizerId !== user.id && <Badge variant="outline" className="ml-2">Shared with you</Badge>}</TableCell>
                 <TableCell>{formatInTz(e.startsAt, e.timezone)}</TableCell>
                 <TableCell><Badge variant={e.status === "PUBLISHED" ? "default" : "secondary"}>{e.status}</Badge></TableCell>
                 <TableCell>{e._count.orders}</TableCell>

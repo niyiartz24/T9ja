@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Actor } from "@/lib/event-service";
+import { scope, type Actor } from "@/lib/event-service";
 
 export class ScanAuthError extends Error {}
 
@@ -24,7 +24,7 @@ export function normalizeScanInput(raw: string): { kind: "code" | "token"; value
 export async function canScanEvent(actor: Actor, eventId: string): Promise<boolean> {
   const pick = { select: { id: true } };
   if (actor.role === "SUPER_ADMIN") return !!(await db.event.findUnique({ where: { id: eventId }, ...pick }));
-  if (actor.role === "ORGANIZER") return !!(await db.event.findFirst({ where: { id: eventId, organizerId: actor.id }, ...pick }));
+  if (actor.role === "ORGANIZER") return !!(await db.event.findFirst({ where: { id: eventId, ...scope(actor) }, ...pick }));
   if (actor.role === "STAFF") return !!(await db.eventStaff.findUnique({ where: { eventId_userId: { eventId, userId: actor.id } }, ...pick }));
   return false;
 }

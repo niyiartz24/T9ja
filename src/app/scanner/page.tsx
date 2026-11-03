@@ -3,13 +3,14 @@ import { ScanLine } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { formatInTz } from "@/lib/events";
+import { scope } from "@/lib/event-service";
 
 export default async function ScannerHome() {
   const user = await requireRole("STAFF", "ORGANIZER", "SUPER_ADMIN");
   const base = { status: "PUBLISHED" as const };
   const where =
     user.role === "SUPER_ADMIN" ? base
-    : user.role === "ORGANIZER" ? { ...base, organizerId: user.id }
+    : user.role === "ORGANIZER" ? { ...base, ...scope({ id: user.id, role: user.role }) }
     : { ...base, staff: { some: { userId: user.id } } };
   const events = await db.event.findMany({
     where, orderBy: { startsAt: "asc" }, take: 50,

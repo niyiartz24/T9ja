@@ -118,3 +118,11 @@ Database: one new migration (see prisma/migrations in the update zip): Payment.m
 earlier payment-review columns, all written with IF NOT EXISTS so it is safe to run even if some were already applied.
 Known limitations: a shared account cannot tell transfers apart except by amount, sender name and the order reference in the description, so the
 admin must check each one. No card payments, no automatic refunds, no proof-of-payment upload.
+
+## Organizers added to events: written, NOT yet verified
+An event has one owner (the creator) plus any number of added organizers (table EventOrganizer). The Super Admin, the owner and any organizer already on
+the event can add another ACTIVE organizer by email (the Super Admin also gets a picker). Added organizers get the same access as the owner: edit, ticket types,
+publish, share link (carrying their OWN referral code), attendees and CSV, scanner and door staff. Only the owner or Super Admin can cancel the event or
+remove others; anyone can leave. Added organizers get an email. Organizers still cannot see events they neither own nor were added to.
+Migration: prisma/migrations/20261102000000_event_organizers (idempotent). Apply with: npx prisma migrate deploy
+Admin: Payments link is in the top menu, with extra shortcuts on the overview and orders pages.

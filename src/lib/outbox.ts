@@ -23,6 +23,7 @@ export async function enqueueTicketEmail(orderId: string, tx: Prisma.Transaction
 
 async function deliver(job: { to: string; template: string; payload: unknown }) {
   if (job.template === "payment-claim") return deliverClaimAlert(job);
+  if (job.template === "event-added") return deliverEventAdded(job);
   if (job.template !== "tickets") throw new Error(`Unknown email template ${job.template}`);
   const { orderId } = job.payload as { orderId: string };
   const order = await db.order.findUnique({
@@ -93,5 +94,16 @@ async function deliverClaimAlert(job: { to: string; payload: unknown }) {
     subject: `Bank transfer to verify: ${p.orderReference}`,
     text: `A customer says they have paid ${amount} for ${p.eventTitle}.\nOrder: ${p.orderReference}\nSender name: ${p.senderName}\nCheck your bank statement, then confirm it here: ${link}`,
     html: `<p>A customer says they have paid <strong>${esc(amount)}</strong> for ${esc(p.eventTitle)}.</p><p>Order: <strong>${esc(p.orderReference)}</strong><br>Sender name: ${esc(p.senderName)}</p><p>Check your bank statement, then <a href="${link}">confirm it here</a>.</p>`,
+  });
+}
+
+async function deliverEventAdded(job: { to: string; payload: unknown }) {
+  const p = job.payload as { eventTitle: string; addedBy: string };
+  const link = `${(process.env.APP_URL ?? "").replace(/\/+$/, "")}/organizer/events`;
+  await sendEmail({
+    to: job.to,
+    subject: `You were added to "${p.eventTitle}" on Ticket9ja`,
+    text: `${p.addedBy} added you as an organizer of "${p.eventTitle}". You can now manage it, see its attendees and scan tickets.\nOpen your events: ${link}`,
+    html: `<p>${esc(p.addedBy)} added you as an organizer of <strong>${esc(p.eventTitle)}</strong>. You can now manage it, see its attendees and scan tickets.</p><p><a href="${link}">Open your events</a></p>`,
   });
 }

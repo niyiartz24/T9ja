@@ -23,8 +23,18 @@ export default async function AdminHome() {
     <main className="mx-auto max-w-6xl space-y-10 px-6 py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Platform overview</h1>
-        <Button asChild><Link href="/admin/events/new">Create event</Link></Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline"><Link href="/admin/payments">Verify payments{s.attention.toVerify > 0 ? ` (${s.attention.toVerify})` : ""}</Link></Button>
+          <Button asChild><Link href="/admin/events/new">Create event</Link></Button>
+        </div>
       </div>
+
+      {s.attention.toVerify > 0 && (
+        <div role="alert" className="flex items-start gap-3 rounded-lg border p-4 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <p>{s.attention.toVerify} bank transfer(s) reported by customers are waiting for you to verify. <Link href="/admin/payments" className="underline">Verify them</Link></p>
+        </div>
+      )}
 
       {(s.attention.review > 0 || s.attention.refundDue > 0) && (
         <div role="alert" className="flex items-start gap-3 rounded-lg border border-destructive p-4 text-sm">

@@ -10,7 +10,8 @@ import { AddStaffForm, StaffControls } from "./staff-forms";
 /** Share link, scanner access and door staff: identical for organizers (own events) and Super Admins (all events). */
 export async function EventTools({ actor, event, base }: { actor: Actor; event: { id: string; slug: string; status: string; organizerId: string }; base: string }) {
   const appUrl = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
-  const [staff, code] = await Promise.all([listScannerStaff(actor, event.id), ensureReferralCode(event.organizerId)]);
+  const [staff, code] = await Promise.all([listScannerStaff(actor, event.id), ensureReferralCode(actor.role === "SUPER_ADMIN" ? event.organizerId : actor.id)]);
+  const who = actor.role === "SUPER_ADMIN" ? "the owner's" : "your";
   const link = `${appUrl}/events/${event.slug}?ref=${code}`;
   return (
     <div className="space-y-8">
@@ -18,7 +19,7 @@ export async function EventTools({ actor, event, base }: { actor: Actor; event: 
         <h2 className="text-lg font-semibold">Share link</h2>
         {event.status === "PUBLISHED" ? (
           <>
-            <p className="text-sm text-muted-foreground">Anyone with this link can buy tickets for this event only. It is not listed anywhere on the site. The link carries the organizer&apos;s referral code ({code}), which appears on every receipt.</p>
+            <p className="text-sm text-muted-foreground">Anyone with this link can buy tickets for this event only. It is not listed anywhere on the site. The link carries {who} referral code ({code}), which appears on every receipt.</p>
             <CopyLink url={link} />
           </>
         ) : (

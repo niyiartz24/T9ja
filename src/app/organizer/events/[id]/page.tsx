@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { EventForm } from "../event-form";
 import { StatusActions } from "../status-actions";
 import { EventTools } from "@/app/_shared/event-tools";
+import { EventOrganizers } from "@/app/_shared/event-organizers";
 import { TicketTypesSection } from "./ticket-types-section";
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,8 +33,9 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         </div>
       )}
       <StatusActions id={event.id} status={event.status} />
-      <EventTools actor={{ id: user.id, role: user.role }} event={event} base="/organizer/events" />
       <TicketTypesSection eventId={event.id} timezone={tz} types={event.ticketTypes} editable={editable} />
+      <EventTools actor={{ id: user.id, role: user.role }} event={event} base="/organizer/events" />
+      <EventOrganizers actor={{ id: user.id, role: user.role }} eventId={event.id} />
       {editable ? (
         <EventForm
           values={{

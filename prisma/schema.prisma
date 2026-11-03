@@ -80,6 +80,8 @@ model User {
   sessions      Session[]
   events        Event[]    @relation("OrganizerEvents")
   staffAccess   EventStaff[]
+  collaborations     EventOrganizer[] @relation("Collaborator")
+  collaboratorsAdded EventOrganizer[] @relation("CollaboratorAddedBy")
   invitationsSent OrganizerInvitation[] @relation("InvitedBy")
   scans         TicketScan[]
   auditLogs     AuditLog[]
@@ -161,6 +163,7 @@ model Event {
   orders       Order[]
   tickets      Ticket[]
   staff        EventStaff[]
+  collaborators EventOrganizer[]
   scans        TicketScan[]
   @@index([organizerId])
   @@index([status, startsAt])
@@ -351,4 +354,18 @@ model RateLimitBucket {
   key         String   @id
   count       Int      @default(1)
   windowStart DateTime @default(now())
+}
+
+model EventOrganizer {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  addedById String?
+  createdAt DateTime @default(now())
+
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User  @relation("Collaborator", fields: [userId], references: [id], onDelete: Cascade)
+  addedBy User? @relation("CollaboratorAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+  @@unique([eventId, userId])
+  @@index([userId])
 }
