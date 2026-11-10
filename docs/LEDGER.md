@@ -126,3 +126,12 @@ publish, share link (carrying their OWN referral code), attendees and CSV, scann
 remove others; anyone can leave. Added organizers get an email. Organizers still cannot see events they neither own nor were added to.
 Migration: prisma/migrations/20261102000000_event_organizers (idempotent). Apply with: npx prisma migrate deploy
 Admin: Payments link is in the top menu, with extra shortcuts on the overview and orders pages.
+
+## PayOnUs alongside manual transfer, and organizer buyer data: written, NOT yet verified
+Payments: PAYMENT_PROVIDERS="payonus,manual" lists the methods customers can choose, in that order (the old single PAYMENT_PROVIDER still works).
+A method is only offered if configured (PayOnUs needs PAYONUS_CLIENT_ID, PAYONUS_CLIENT_SECRET, PAYONUS_BUSINESS_ID). The order page shows a button per method;
+once one is chosen it shows that method's instructions and lets the customer switch. PayOnUs confirms automatically (webhook plus polling on the order page,
+always verified against the PayOnUs API); manual transfer waits for the Super Admin in /admin/payments. Refunds for both are recorded in /admin/orders after the
+money has been sent back (PayOnUs dashboard or the bank). Sandbox helper: npm run payonus:simulate.
+Organizers: new Orders and Tickets pages (menu), overview totals (paid orders, revenue, tickets), and an Orders link on each event. They show buyer name and email,
+order status, payment method and status, referral code, only for events the organizer owns or was added to. Read-only: no confirming or refunding.

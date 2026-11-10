@@ -27,6 +27,7 @@ export async function EventTools({ actor, event, base }: { actor: Actor; event: 
         )}
         <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline" size="sm"><Link href={`/scanner/${event.id}`}><ScanLine className="h-4 w-4" aria-hidden />Open scanner</Link></Button>
+          <Button asChild variant="outline" size="sm"><Link href={`${base.replace("/events", "/orders")}?event=${event.id}`}>Orders</Link></Button>
           <Button asChild variant="outline" size="sm"><Link href={`${base}/${event.id}/attendees`}><Users className="h-4 w-4" aria-hidden />Attendees</Link></Button>
           <Button asChild variant="outline" size="sm"><a href={`/api/events/${event.id}/attendees`}><Download className="h-4 w-4" aria-hidden />Export CSV</a></Button>
         </div>

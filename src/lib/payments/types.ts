@@ -43,6 +43,10 @@ export type WebhookEvent = {
 
 export interface PaymentProvider {
   readonly name: string;
+  readonly label: string; // shown to customers
+  readonly description: string;
+  /** False when required settings are missing: the method is then hidden from customers. */
+  isConfigured?(): boolean;
   initialize(input: InitInput): Promise<InitResult>;
   /** Must ask the gateway itself. Never trust anything the customer's browser or a webhook body claims. */
   verify(providerReference: string, meta?: unknown): Promise<VerifyResult>;

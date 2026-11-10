@@ -19,6 +19,8 @@ type Confirmation = { status?: string; amountMinor?: number; currency?: string }
  */
 export const manualProvider: PaymentProvider = {
   name: "manual",
+  label: "Manual bank transfer",
+  description: "Transfer to the Ticket9ja account. We confirm each payment by hand, so it can take longer.",
 
   async initialize(i) {
     return { instructions: { kind: "bank_transfer", ...bankDetails(), amountMinor: i.amountMinor, narration: i.orderReference } };

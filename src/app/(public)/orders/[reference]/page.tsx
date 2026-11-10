@@ -10,6 +10,7 @@ import { processOutbox } from "@/lib/outbox";
 import { allow } from "@/lib/rate-limit";
 import { verifyOrderPayments } from "@/lib/payments/service";
 import { AutoRefresh, PayButton } from "./pay-button";
+import { enabledProviders } from "@/lib/payments/registry";
 import { TransferClaim } from "./transfer-claim";
 
 const STATUS: Record<string, { title: string; body: string }> = {
@@ -27,7 +28,7 @@ const load = (reference: string) =>
     include: {
       event: true,
       items: { include: { ticketType: true } },
-      payments: { where: { status: { in: ["INITIATED", "PENDING"] } }, select: { id: true, meta: true, claimedAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
+      payments: { where: { status: { in: ["INITIATED", "PENDING"] } }, select: { id: true, provider: true, meta: true, claimedAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
       tickets: { orderBy: [{ ticketTypeId: "asc" }, { sequence: "asc" }], select: { id: true, code: true, qrToken: true, ticketType: { select: { name: true } } } },
     },
   });
@@ -46,11 +47,14 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
   if (order.status === "PAID") after(() => processOutbox(3).catch((e) => console.error("outbox", e))); // retry any unsent ticket email
   const s = STATUS[order.status];
   const paymentInFlight = order.status === "PENDING" && order.payments.length > 0;
-  const transfer = paymentInFlight ? instructionsOf(order.payments[0].meta) : null;
-  const claimed = !!order.payments[0]?.claimedAt;
+  const latest = order.payments[0];
+  const transfer = paymentInFlight ? instructionsOf(latest.meta) : null;
+  const claimed = !!latest?.claimedAt;
+  const methods = enabledProviders();
+  const others = methods.filter((m) => m.name !== latest?.provider);
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-6 py-12">
-      {paymentInFlight && claimed && <AutoRefresh />}
+      {paymentInFlight && (claimed || latest?.provider === "payonus") && <AutoRefresh />}
       <header>
         <p className="text-sm text-muted-foreground">Order {order.reference}</p>
         <h1 className="text-2xl font-semibold">{s.title}</h1>
@@ -85,11 +89,11 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
         </section>
       )}
       {order.status === "PENDING" && order.totalMinor > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {transfer && (
             <section aria-labelledby="transfer" className="space-y-3 rounded-lg border p-4 text-sm">
-              <h2 id="transfer" className="font-semibold">Pay by bank transfer</h2>
-              <p className="text-muted-foreground">Transfer exactly {formatMinor(transfer.amountMinor, order.currency)} to this account from any bank app. This page updates by itself once the payment arrives.</p>
+              <h2 id="transfer" className="font-semibold">{latest?.provider === "payonus" ? "Pay with PayOnUs" : "Pay by bank transfer"}</h2>
+              <p className="text-muted-foreground">Transfer exactly {formatMinor(transfer.amountMinor, order.currency)} to this account from any bank app.</p>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
                 <dt className="text-muted-foreground">Bank</dt><dd className="font-medium">{transfer.bankName}</dd>
                 <dt className="text-muted-foreground">Account number</dt><dd className="font-mono text-base font-semibold">{transfer.accountNumber}</dd>
@@ -97,16 +101,35 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
                 <dt className="text-muted-foreground">Amount</dt><dd className="font-semibold">{formatMinor(transfer.amountMinor, order.currency)}</dd>
               </dl>
               {transfer.narration && <p>Put this reference as the transfer description: <span className="font-mono font-semibold">{transfer.narration}</span></p>}
-              <p className="text-xs text-muted-foreground">Send the exact amount, once. We confirm payments by hand, so it can take a little while.</p>
-              {claimed ? (
-                <p role="status" className="rounded-md border p-3">We have your payment notice and are checking it. Your tickets will be emailed as soon as it is confirmed, and this page will update.</p>
+              {latest?.provider === "payonus" ? (
+                <>
+                  <p className="text-xs text-muted-foreground">This account is for this order only. Send the exact amount, once. Your payment is detected automatically and this page updates by itself.</p>
+                  <p role="status" className="text-muted-foreground">Waiting for your payment...</p>
+                </>
               ) : (
-                <TransferClaim reference={order.reference} defaultName={order.buyerName} />
+                <>
+                  <p className="text-xs text-muted-foreground">Send the exact amount, once. We confirm payments by hand, so it can take a little while.</p>
+                  {claimed ? (
+                    <p role="status" className="rounded-md border p-3">We have your payment notice and are checking it. Your tickets will be emailed as soon as it is confirmed, and this page will update.</p>
+                  ) : (
+                    <TransferClaim reference={order.reference} defaultName={order.buyerName} />
+                  )}
+                </>
               )}
             </section>
           )}
           {order.expiresAt && <p className="text-sm text-muted-foreground">Held until {formatInTz(order.expiresAt, order.event.timezone)}.</p>}
-          {!transfer && <PayButton reference={order.reference} label={paymentInFlight ? "Pay again" : "Pay by bank transfer"} />}
+          {!transfer && methods.length === 0 && <p className="text-sm text-destructive">Online payment is not available right now. Please try again later.</p>}
+          {!transfer && methods.map((m, i) => (
+            <PayButton key={m.name} reference={order.reference} provider={m.name} label={m.label} description={m.description} variant={i === 0 ? "default" : "outline"} />
+          ))}
+          {transfer && (
+            <div className="space-y-2">
+              {latest?.provider === "payonus" && <PayButton reference={order.reference} provider="payonus" fresh label="Get new account details" variant="outline" />}
+              {others.length > 0 && <p className="text-xs text-muted-foreground">Prefer another way to pay?</p>}
+              {others.map((m) => <PayButton key={m.name} reference={order.reference} provider={m.name} label={m.label} description={m.description} variant="outline" />)}
+            </div>
+          )}
         </div>
       )}
     </main>

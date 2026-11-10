@@ -14,6 +14,8 @@ type Ledger = { status?: string; amountMinor?: number; currency?: string };
 
 export const mockProvider: PaymentProvider = {
   name: "mock",
+  label: "Test payment (development only)",
+  description: "Simulated gateway for testing.",
 
   async initialize(i) {
     return { authorizationUrl: `/dev/mock-pay/${i.paymentReference}` };

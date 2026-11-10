@@ -87,6 +87,12 @@ export function payonusHashMatches(body: { accountNumber?: unknown; onusReferenc
 
 export const payonusProvider: PaymentProvider = {
   name: "payonus",
+  label: "Pay with PayOnUs",
+  description: "We create a one-time bank account for this order. Transfer the exact amount and your payment is detected automatically.",
+
+  isConfigured() {
+    return !!(process.env.PAYONUS_CLIENT_ID && process.env.PAYONUS_CLIENT_SECRET && process.env.PAYONUS_BUSINESS_ID);
+  },
 
   async initialize(i) {
     const appUrl = process.env.APP_URL ?? "";
@@ -162,5 +168,7 @@ export const payonusProvider: PaymentProvider = {
       return null;
     }
   },
-  // No refund(): PayOnUs documents bank-transfer refunds separately. Refund from the PayOnUs dashboard for now.
+
+  /** Refund from the PayOnUs dashboard first, then record it here with the Refund button. */
+  async refund() { return { ok: true }; },
 };

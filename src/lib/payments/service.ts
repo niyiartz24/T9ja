@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { confirmOrderSale, reviveExpiredOrder } from "@/lib/inventory";
 import { enqueueTicketEmail } from "@/lib/outbox";
 import { issueTicketsForOrder } from "@/lib/tickets";
-import { getProvider } from "./registry";
+import { PaymentConfigError, enabledProviderNames, getProvider } from "./registry";
 
 export class PaymentError extends Error {}
 export class WebhookAuthError extends Error {}
@@ -15,16 +15,34 @@ const OPEN = ["INITIATED", "PENDING"] as const;
 const newPaymentReference = () => "P9-" + randomBytes(12).toString("hex");
 const isUnique = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
-/** Creates a payment attempt. Returns a redirect URL, or null when the customer must follow bank-transfer instructions. */
-export async function startPayment(orderReference: string, baseUrl: string): Promise<{ authorizationUrl: string | null }> {
-  const provider = getProvider();
+const REUSABLE = new Set(["manual", "payonus"]); // bank-transfer methods: reuse the open attempt instead of creating duplicates
+
+/**
+ * Creates a payment attempt with the chosen method (default: the first enabled one).
+ * Returns a redirect URL, or null when the customer must follow bank-transfer instructions.
+ * fresh = ask the gateway for new account details even though an attempt is open (PayOnUs only).
+ */
+export async function startPayment(
+  orderReference: string, baseUrl: string, opts: { provider?: string; fresh?: boolean } = {},
+): Promise<{ authorizationUrl: string | null }> {
+  const enabled = enabledProviderNames();
+  const chosen = (opts.provider ?? enabled[0] ?? "").trim().toLowerCase();
+  if (!chosen) throw new PaymentConfigError("Online payment is not configured yet.");
+  if (!enabled.includes(chosen)) throw new PaymentConfigError("That payment method is not available.");
+  const provider = getProvider(chosen);
   const order = await db.order.findUnique({ where: { reference: orderReference } });
   if (!order || order.status !== "PENDING" || order.totalMinor <= 0) throw new PaymentError("This order can no longer be paid.");
   if (order.expiresAt && order.expiresAt <= new Date()) throw new PaymentError("This reservation has expired. Please start a new order.");
 
-  if (provider.name === "manual") {
-    const open = await db.payment.findFirst({ where: { orderId: order.id, provider: "manual", status: { in: [...OPEN] } }, select: { id: true } });
-    if (open) return { authorizationUrl: null };
+  if (REUSABLE.has(provider.name)) {
+    const open = await db.payment.findFirst({
+      where: {
+        orderId: order.id, provider: provider.name, status: { in: [...OPEN] },
+        ...(provider.name === "manual" ? {} : { createdAt: { gt: new Date(Date.now() - 20 * 60_000) } }), // a gateway account is only reused for a short while
+      },
+      select: { id: true },
+    });
+    if (open && !(opts.fresh && provider.name !== "manual")) return { authorizationUrl: null };
   }
 
   const reference = newPaymentReference();

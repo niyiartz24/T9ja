@@ -12,7 +12,7 @@ import { ResendButton } from "./resend-button";
 const PAGE = 30;
 const STATUSES = ["PENDING", "PAID", "FAILED", "EXPIRED", "CANCELLED", "REFUNDED"] as const;
 
-export default async function AdminOrders({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; attention?: string; page?: string }> }) {
+export default async function AdminOrders({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; attention?: string; event?: string; page?: string }> }) {
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().slice(0, 80);
   const status = STATUSES.find((s) => s === sp.status);
@@ -21,6 +21,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
 
   const where: Prisma.OrderWhereInput = {
     ...(status ? { status } : {}),
+    ...(sp.event ? { eventId: sp.event } : {}),
     ...(attention ? { payments: { some: { OR: [{ status: "REVIEW" }, { refundRequired: true, status: { not: "REFUNDED" } }] } } } : {}),
     ...(q ? { OR: [{ reference: q.toUpperCase() }, { referralCode: q.toUpperCase() }, { buyerEmail: { contains: q.toLowerCase() } }, { buyerName: { contains: q, mode: "insensitive" } }] } : {}),
   };
@@ -31,12 +32,12 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
       select: {
         id: true, reference: true, referralCode: true, buyerName: true, buyerEmail: true, totalMinor: true, currency: true, status: true, createdAt: true,
         event: { select: { id: true, title: true } },
-        payments: { orderBy: { createdAt: "desc" }, take: 3, select: { id: true, status: true, refundRequired: true } },
+        payments: { orderBy: { createdAt: "desc" }, take: 3, select: { id: true, provider: true, status: true, refundRequired: true } },
       },
     }),
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE));
-  const qs = (p: number) => `/admin/orders?${new URLSearchParams({ ...(q ? { q } : {}), ...(status ? { status } : {}), ...(attention ? { attention: "1" } : {}), page: String(p) })}`;
+  const qs = (p: number) => `/admin/orders?${new URLSearchParams({ ...(q ? { q } : {}), ...(status ? { status } : {}), ...(attention ? { attention: "1" } : {}), ...(sp.event ? { event: sp.event } : {}), page: String(p) })}`;
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
       <h1 className="text-2xl font-semibold">Orders and payments</h1>
@@ -68,7 +69,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
                   <TableCell><Badge variant={o.status === "PAID" ? "default" : "secondary"}>{o.status}</Badge></TableCell>
                   <TableCell className="space-x-1">
                     {o.payments.length === 0 ? <span className="text-muted-foreground">{o.totalMinor === 0 ? "n/a" : "none"}</span> : o.payments.map((p) => (
-                      <Badge key={p.id} variant={p.status === "REVIEW" || p.refundRequired ? "outline" : "secondary"}>{p.status}{p.refundRequired && p.status !== "REFUNDED" ? " (refund due)" : ""}</Badge>
+                      <Badge key={p.id} variant={p.status === "REVIEW" || p.refundRequired ? "outline" : "secondary"}>{p.provider === "payonus" ? "PayOnUs " : ""}{p.status}{p.refundRequired && p.status !== "REFUNDED" ? " (refund due)" : ""}</Badge>
                     ))}
                   </TableCell>
                   <TableCell className="text-right">{o.totalMinor === 0 ? "Free" : formatMinor(o.totalMinor, o.currency)}</TableCell>

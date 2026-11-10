@@ -11,6 +11,8 @@ export default async function OrganizerLayout({ children }: { children: React.Re
         <div className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-3 text-sm">
           <Link href="/organizer" className="hover:underline">Overview</Link>
           <Link href="/organizer/events" className="hover:underline">Events</Link>
+          <Link href="/organizer/orders" className="hover:underline">Orders</Link>
+          <Link href="/organizer/tickets" className="hover:underline">Tickets</Link>
           <span className="ml-auto text-muted-foreground">{user.email}</span>
           <form action={logout}><Button size="sm" variant="outline">Sign out</Button></form>
         </div>

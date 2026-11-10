@@ -14,7 +14,7 @@ const payment = await db.payment.findFirst({
   where: { provider: "payonus", status: "PENDING", ...(ref ? { providerReference: ref } : {}) },
   orderBy: { createdAt: "desc" },
 });
-if (!payment) { console.error("No pending PayOnUs payment found. Click Pay now on an order first."); process.exit(1); }
+if (!payment) { console.error("No pending PayOnUs payment found. Choose PayOnUs on an order first."); process.exit(1); }
 const inst = payment.meta?.instructions;
 const onusReference = payment.meta?.onusReference;
 if (!inst || !onusReference) { console.error("This payment has no stored account details."); process.exit(1); }

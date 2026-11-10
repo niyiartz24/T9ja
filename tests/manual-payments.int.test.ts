@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const url = process.env.TEST_DATABASE_URL;
 if (url) process.env.DATABASE_URL = url;
 process.env.PAYMENT_PROVIDER = "manual";
+delete process.env.PAYMENT_PROVIDERS; // this file tests one method on its own
 process.env.PAYMENT_ALERT_EMAIL = "alerts@test.local";
 
 describe.skipIf(!url)("manual bank transfer payments (database)", () => {
