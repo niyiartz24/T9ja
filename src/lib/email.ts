@@ -14,7 +14,11 @@ export async function sendEmail(msg: EmailMessage): Promise<void> {
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ from, to: msg.to, subject: msg.subject, html: msg.html, text: msg.text }),
   });
-  if (!res.ok) throw new Error(`Email provider responded ${res.status}`);
+  if (!res.ok) {
+    // Resend explains the cause in the body (for example an unverified domain). The body never contains our key.
+    const detail = (await res.text().catch(() => "")).slice(0, 300);
+    throw new Error(`Email provider responded ${res.status}: ${detail}`);
+  }
 }
 
 export function invitationEmail(link: string): Omit<EmailMessage, "to"> {

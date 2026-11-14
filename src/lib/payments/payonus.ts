@@ -35,7 +35,10 @@ async function accessToken(rejected?: string): Promise<string> {
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ apiClientId: need("PAYONUS_CLIENT_ID"), apiClientSecret: need("PAYONUS_CLIENT_SECRET") }),
   });
-  if (!res.ok) throw new Error(`PayOnUs authentication failed (HTTP ${res.status})`);
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => "")).slice(0, 200);
+    throw new Error(`PayOnUs authentication failed (HTTP ${res.status}, ${env()} environment): ${detail}`);
+  }
   const body = (await res.json()) as { access_token?: string; expires_in?: number; data?: { access_token?: string; expires_in?: number } };
   const token = body.access_token ?? body.data?.access_token;
   if (!token) throw new Error("PayOnUs authentication returned no token");
