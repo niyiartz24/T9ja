@@ -73,7 +73,7 @@ export default async function OrganizerOrders({ searchParams }: { searchParams: 
                 <TableCell>{o.event.title}</TableCell>
                 <TableCell><div>{o.buyerName}</div><div className="text-xs text-muted-foreground">{o.buyerEmail}</div></TableCell>
                 <TableCell><Badge variant={o.status === "PAID" ? "default" : "secondary"}>{o.status}</Badge></TableCell>
-                <TableCell className="space-x-1">{o.payments.length === 0 ? <span className="text-muted-foreground">{o.totalMinor === 0 ? "free" : "none"}</span> : o.payments.map((p) => <Badge key={p.id} variant="secondary">{p.provider === "payonus" ? "PayOnUs " : p.provider === "manual" ? "Transfer " : ""}{p.status}</Badge>)}</TableCell>
+                <TableCell className="space-x-1">{o.payments.length === 0 ? <span className="text-muted-foreground">{o.totalMinor === 0 ? "free" : "none"}</span> : o.payments.map((p) => <Badge key={p.id} variant="secondary">{p.provider === "korapay" ? "Korapay " : p.provider === "manual" ? "Transfer " : ""}{p.status}</Badge>)}</TableCell>
                 <TableCell>{o._count.tickets}</TableCell>
                 <TableCell className="text-right">{o.totalMinor === 0 ? "Free" : formatMinor(o.totalMinor, o.currency)}</TableCell>
               </TableRow>

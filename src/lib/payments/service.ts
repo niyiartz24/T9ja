@@ -15,12 +15,12 @@ const OPEN = ["INITIATED", "PENDING"] as const;
 const newPaymentReference = () => "P9-" + randomBytes(12).toString("hex");
 const isUnique = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
-const REUSABLE = new Set(["manual", "payonus"]); // bank-transfer methods: reuse the open attempt instead of creating duplicates
+const REUSABLE = new Set(["manual"]); // manual transfer: reuse the open attempt instead of creating duplicates
 
 /**
  * Creates a payment attempt with the chosen method (default: the first enabled one).
  * Returns a redirect URL, or null when the customer must follow bank-transfer instructions.
- * fresh = ask the gateway for new account details even though an attempt is open (PayOnUs only).
+ * fresh = start a new attempt even though one is open (not needed for manual transfer, which always reuses it).
  */
 export async function startPayment(
   orderReference: string, baseUrl: string, opts: { provider?: string; fresh?: boolean } = {},

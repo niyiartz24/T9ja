@@ -135,3 +135,11 @@ always verified against the PayOnUs API); manual transfer waits for the Super Ad
 money has been sent back (PayOnUs dashboard or the bank). Sandbox helper: npm run payonus:simulate.
 Organizers: new Orders and Tickets pages (menu), overview totals (paid orders, revenue, tickets), and an Orders link on each event. They show buyer name and email,
 order status, payment method and status, referral code, only for events the organizer owns or was added to. Read-only: no confirming or refunding.
+
+## Korapay replaces PayOnUs: written, NOT yet verified against Korapay
+Adapter src/lib/payments/korapay.ts (Checkout Redirect). PAYMENT_PROVIDERS="korapay,manual". Needs only KORAPAY_SECRET_KEY (sk_test_... or sk_live_..., the
+key decides test vs live). Customer is redirected to Korapay, returns to the order page, and tickets are issued only after the server asks Korapay for the charge
+by our reference and the amount actually paid matches. Webhook: /api/webhooks/payments/korapay, header x-korapay-signature = HMAC-SHA256 of JSON.stringify(data)
+with the secret key. A failed attempt is deliberately NOT final (customers can retry inside the same checkout). Refunds are recorded after refunding in the
+Korapay dashboard. PayOnUs code, tests and sandbox script were removed.
+Invitations: Resend and Revoke now show their result, including the reason an email could not be sent.

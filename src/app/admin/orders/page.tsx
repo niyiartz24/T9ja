@@ -69,7 +69,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
                   <TableCell><Badge variant={o.status === "PAID" ? "default" : "secondary"}>{o.status}</Badge></TableCell>
                   <TableCell className="space-x-1">
                     {o.payments.length === 0 ? <span className="text-muted-foreground">{o.totalMinor === 0 ? "n/a" : "none"}</span> : o.payments.map((p) => (
-                      <Badge key={p.id} variant={p.status === "REVIEW" || p.refundRequired ? "outline" : "secondary"}>{p.provider === "payonus" ? "PayOnUs " : ""}{p.status}{p.refundRequired && p.status !== "REFUNDED" ? " (refund due)" : ""}</Badge>
+                      <Badge key={p.id} variant={p.status === "REVIEW" || p.refundRequired ? "outline" : "secondary"}>{p.provider === "korapay" ? "Korapay " : p.provider === "manual" ? "Transfer " : ""}{p.status}{p.refundRequired && p.status !== "REFUNDED" ? " (refund due)" : ""}</Badge>
                     ))}
                   </TableCell>
                   <TableCell className="text-right">{o.totalMinor === 0 ? "Free" : formatMinor(o.totalMinor, o.currency)}</TableCell>

@@ -1,15 +1,15 @@
 import { manualProvider } from "./manual";
 import { mockProvider } from "./mock";
-import { payonusProvider } from "./payonus";
+import { korapayProvider } from "./korapay";
 import type { PaymentProvider } from "./types";
 
 export class PaymentConfigError extends Error {}
 
 // To add another gateway: implement PaymentProvider in a new file and register it here.
-const providers: Record<string, PaymentProvider> = { payonus: payonusProvider, manual: manualProvider, mock: mockProvider };
+const providers: Record<string, PaymentProvider> = { korapay: korapayProvider, manual: manualProvider, mock: mockProvider };
 
 /**
- * Methods customers can choose, in the order of PAYMENT_PROVIDERS (for example "payonus,manual").
+ * Methods customers can choose, in the order of PAYMENT_PROVIDERS (for example "korapay,manual").
  * The older single PAYMENT_PROVIDER still works. Unknown names, the mock provider in production,
  * and providers whose settings are incomplete are left out.
  */

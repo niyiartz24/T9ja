@@ -52,7 +52,7 @@ describe.skipIf(!url)("choosing between payment methods (database)", () => {
 
   it("refuses a method that is not enabled or unknown", async () => {
     const o = await order();
-    await expect(pay.startPayment(o.reference, "http://localhost:3000", { provider: "payonus" })).rejects.toBeInstanceOf(reg.PaymentConfigError);
+    await expect(pay.startPayment(o.reference, "http://localhost:3000", { provider: "korapay" })).rejects.toBeInstanceOf(reg.PaymentConfigError);
     await expect(pay.startPayment(o.reference, "http://localhost:3000", { provider: "nonsense" })).rejects.toBeInstanceOf(reg.PaymentConfigError);
     expect(await db.payment.count({ where: { orderId: o.id } })).toBe(0);
   });

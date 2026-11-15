@@ -10,7 +10,7 @@ export function RefundButton({ paymentId }: { paymentId: string }) {
       <input type="hidden" name="paymentId" value={paymentId} />
       <Button
         size="sm" variant="outline" disabled={pending}
-        onClick={(e) => { if (!confirm("Record this payment as refunded? Send the money back FIRST (from your bank or the PayOnUs dashboard). This cannot be undone.")) e.preventDefault(); }}
+        onClick={(e) => { if (!confirm("Record this payment as refunded? Send the money back FIRST (from your bank or the Korapay dashboard). This cannot be undone.")) e.preventDefault(); }}
       >
         {pending ? "Refunding..." : "Refund"}
       </Button>

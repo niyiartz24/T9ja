@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InviteForm } from "./invite-form";
-import { resend, revoke } from "./actions";
+import { InvitationButtons } from "./invitation-buttons";
 
 export default async function InvitationsPage() {
   const invitations = await db.organizerInvitation.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
@@ -30,14 +30,7 @@ export default async function InvitationsPage() {
                   <TableCell>{inv.email}</TableCell>
                   <TableCell><Badge variant={state === "ACCEPTED" ? "default" : "secondary"}>{state}</Badge></TableCell>
                   <TableCell>{inv.expiresAt.toISOString().slice(0, 10)}</TableCell>
-                  <TableCell className="space-x-2 text-right">
-                    {(state === "PENDING" || state === "EXPIRED") && (
-                      <form action={resend} className="inline"><input type="hidden" name="id" value={inv.id} /><Button size="sm" variant="outline">Resend</Button></form>
-                    )}
-                    {state === "PENDING" && (
-                      <form action={revoke} className="inline"><input type="hidden" name="id" value={inv.id} /><Button size="sm" variant="ghost">Revoke</Button></form>
-                    )}
-                  </TableCell>
+                  <TableCell className="text-right"><InvitationButtons id={inv.id} canResend={state === "PENDING" || state === "EXPIRED"} canRevoke={state === "PENDING"} /></TableCell>
                 </TableRow>
               );
             })}
