@@ -113,7 +113,7 @@ describe("enabled payment methods", () => {
     vi.stubEnv("PAYMENT_PROVIDERS", "manual,korapay");
     expect(enabledProviderNames()).toEqual(["manual", "korapay"]);
   });
-  it("still honours the single-provider setting and ignores junk, duplicates and the removed PayOnUs", () => {
+  it("still honours the single-provider setting and ignores junk, duplicates and providers that are not configured", () => {
     vi.stubEnv("PAYMENT_PROVIDERS", "");
     vi.stubEnv("PAYMENT_PROVIDER", "manual");
     expect(enabledProviderNames()).toEqual(["manual"]);

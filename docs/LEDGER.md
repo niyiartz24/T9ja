@@ -143,3 +143,9 @@ by our reference and the amount actually paid matches. Webhook: /api/webhooks/pa
 with the secret key. A failed attempt is deliberately NOT final (customers can retry inside the same checkout). Refunds are recorded after refunding in the
 Korapay dashboard. PayOnUs code, tests and sandbox script were removed.
 Invitations: Resend and Revoke now show their result, including the reason an email could not be sent.
+
+## Back to PayOnUs (Korapay kept, switched off): written, NOT yet verified
+Providers are switched with PAYMENT_PROVIDERS only. PayOnUs, Korapay and manual transfer are all in the code; a method is offered only if it is listed
+AND configured. Current plan: PAYMENT_PROVIDERS="payonus,manual". Korapay stays available (add "korapay" and KORAPAY_SECRET_KEY) but is unused.
+PayOnUs 401 on login means PayOnUs rejected the credentials: the error now says which environment was used and what PayOnUs replied.
+Keys must belong to the same environment as PAYONUS_ENV. Sandbox helper: npm run payonus:simulate.
