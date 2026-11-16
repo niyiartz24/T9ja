@@ -54,6 +54,11 @@ export async function requireRole(...roles: Role[]) {
   return user;
 }
 
-export function homeFor(role: Role) {
-  return role === "SUPER_ADMIN" ? "/admin" : role === "ORGANIZER" ? "/organizer" : "/scanner";
+export { homeFor } from "@/lib/redirects";
+
+/** For the scanner: if the session is missing or expired, sign in and then come BACK to the scanner. */
+export async function requireScannerUser() {
+  const user = await getCurrentUser();
+  if (!user || !["STAFF", "ORGANIZER", "SUPER_ADMIN"].includes(user.role)) redirect("/login?next=/scanner");
+  return user;
 }

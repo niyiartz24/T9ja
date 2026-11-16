@@ -149,3 +149,8 @@ Providers are switched with PAYMENT_PROVIDERS only. PayOnUs, Korapay and manual 
 AND configured. Current plan: PAYMENT_PROVIDERS="payonus,manual". Korapay stays available (add "korapay" and KORAPAY_SECRET_KEY) but is unused.
 PayOnUs 401 on login means PayOnUs rejected the credentials: the error now says which environment was used and what PayOnUs replied.
 Keys must belong to the same environment as PAYONUS_ENV. Sandbox helper: npm run payonus:simulate.
+
+## Scanner reachable from the menus, and sign-in returns to the scanner: written, NOT yet verified
+Cause of "the scanner shows the overview": opening /scanner with no session sent people to /login and, after signing in, always to their dashboard overview
+(organizers and admins have no scanner as home). Now the scanner redirects to /login?next=/scanner and login returns there (only to known areas the role may use).
+Admin and organizer menus have a Scanner link (Scans is renamed Scan history).

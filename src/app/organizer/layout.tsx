@@ -13,6 +13,7 @@ export default async function OrganizerLayout({ children }: { children: React.Re
           <Link href="/organizer/events" className="hover:underline">Events</Link>
           <Link href="/organizer/orders" className="hover:underline">Orders</Link>
           <Link href="/organizer/tickets" className="hover:underline">Tickets</Link>
+          <Link href="/scanner" className="hover:underline">Scanner</Link>
           <span className="ml-auto text-muted-foreground">{user.email}</span>
           <form action={logout}><Button size="sm" variant="outline">Sign out</Button></form>
         </div>

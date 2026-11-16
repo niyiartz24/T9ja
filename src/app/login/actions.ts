@@ -4,9 +4,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
-import { createSession, destroySession, homeFor } from "@/lib/auth";
+import { createSession, destroySession } from "@/lib/auth";
+import { destinationAfterLogin } from "@/lib/redirects";
 
-const schema = z.object({ email: z.string().email().toLowerCase(), password: z.string().min(1).max(200) });
+const schema = z.object({ email: z.string().email().toLowerCase(), password: z.string().min(1).max(200), next: z.string().max(200).optional() });
 
 // Precomputed so unknown emails cost the same as wrong passwords.
 const DUMMY = "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$7mQ6Zk0m4m9r3q0Z2yQ9vZ0m8hJm2o2m1m2m3m4m5m6";
@@ -20,7 +21,7 @@ export async function login(_: unknown, form: FormData) {
   if (!user || !ok || user.status !== "ACTIVE") return { error: "Invalid email or password." };
   await createSession(user.id);
   await db.auditLog.create({ data: { actorId: user.id, action: "auth.login", entityType: "User", entityId: user.id } });
-  redirect(homeFor(user.role));
+  redirect(destinationAfterLogin(parsed.data.next, user.role));
 }
 
 export async function logout() {

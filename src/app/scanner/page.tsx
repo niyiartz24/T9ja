@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ScanLine } from "lucide-react";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
+import { requireScannerUser } from "@/lib/auth";
 import { formatInTz } from "@/lib/events";
 import { scope } from "@/lib/event-service";
 
 export default async function ScannerHome() {
-  const user = await requireRole("STAFF", "ORGANIZER", "SUPER_ADMIN");
+  const user = await requireScannerUser();
   const base = { status: "PUBLISHED" as const };
   const where =
     user.role === "SUPER_ADMIN" ? base

@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
+import { requireScannerUser } from "@/lib/auth";
 import { canScanEvent, recentScans, scanStats } from "@/lib/scanner";
 import { ScannerClient } from "./scanner-client";
 
 export default async function ScanEventPage({ params }: { params: Promise<{ eventId: string }> }) {
-  const user = await requireRole("STAFF", "ORGANIZER", "SUPER_ADMIN");
+  const user = await requireScannerUser();
   const { eventId } = await params;
   const actor = { id: user.id, role: user.role };
   if (!(await canScanEvent(actor, eventId))) notFound();
